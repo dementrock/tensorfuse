@@ -45,4 +45,4 @@ def set_value(x, val):
     if is_theano():
         x.set_value(val)
     else:
-        return x.op.get_value()
+        x.op.set_value(val)
