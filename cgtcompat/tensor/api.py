@@ -100,6 +100,40 @@ def broadcast(x, a, b, bcpat):
         _ensure_broadcastable(a, b, bcpat)
         if x == '+':
             return a + b
+        if x == '*':
+            return a * b
         import ipdb; ipdb.set_trace()
     else:
         return cgt.broadcast(x, a, b, bcpat)
+
+def reshape(x, shp):
+    if is_theano():
+        return T.reshape(x, shp)
+    else:
+        return cgt.reshape(x, shp)
+
+def stack(tensors, axis=0):
+    if is_theano():
+        return T.stack(tensors, axis=axis)
+    else:
+        if axis is not 0:
+            raise ValueError('only axis=0 is supported under cgt')
+        return cgt.concatenate(map(lambda x: cgt.reshape(x, [1] + x.shape), tensors), axis=0)
+
+def ones(shape):
+    if is_theano():
+        return T.ones(shape)
+    else:
+        return cgt.ones(shape)
+
+def concatenate(items, axis=0):
+    if is_theano():
+        return T.concatenate(items, axis=axis)
+    else:
+        return cgt.concatenate(items, axis=axis)
+
+def sqrt(x):
+    if is_theano():
+        return T.sqrt(x)
+    else:
+        return cgt.sqrt(x)

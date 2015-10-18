@@ -12,10 +12,15 @@ def is_shared(x):
     if is_theano():
         return isinstance(x, theano.compile.SharedVariable)
     else:
-        if isinstance(x, cgt.core.Node):
-            import ipdb; ipdb.set_trace()
-        else:
-            return False
+        return isinstance(x, cgt.core.Node) and isinstance(x.op, cgt.core.InMemoryData)
+
+# In Theano, TensorVariable and SharedVariable are different, and they do not
+# inherit from each other
+def is_tensor(x):
+    if is_theano():
+        return isinstance(x, T.TensorVariable)
+    else:
+        return isinstance(x, cgt.core.Node) and x.is_tensor() and not isinstance(x.op, cgt.core.InMemoryData)
 
 def tensor(dtype, ndim, name=None, fixed_shape=None):
     """
@@ -24,7 +29,7 @@ def tensor(dtype, ndim, name=None, fixed_shape=None):
     if is_theano():
         if fixed_shape is not None:
             print 'fixed shape ignored in Theano'
-        return T.TensorType(dtype, [False] * ndim)
+        return T.TensorType(dtype, [False] * ndim)(name)
     else:
         return cgt.tensor(dtype, ndim, name, fixed_shape)
 
@@ -46,3 +51,15 @@ def set_value(x, val):
         x.set_value(val)
     else:
         x.op.set_value(val)
+
+def is_variable(x):
+    if is_theano():
+        return isinstance(x, theano.gof.Variable)
+    else:
+        return isinstance(x, cgt.core.Node)
+
+def broadcastable(x):
+    if is_theano():
+        return x.broadcastable
+    else:
+        return None
