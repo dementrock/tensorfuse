@@ -4,6 +4,7 @@ import compat
 from operator import itemgetter
 import tensor
 from gradient import grad
+from utils import wrap_into_list
 
 if is_theano():
     import theano
@@ -28,18 +29,6 @@ def shared(val, name=None, broadcastable=None):#*args, **kwargs):
     else:
         return cgt.shared(val, name=name)
 
-def _wrap_into_list(x):
-    """
-    Wrap the input into a list if it is not already a list.
-
-    """
-    if x is None:
-        return []
-    elif not isinstance(x, (list, tuple)):
-        return [x]
-    else:
-        return list(x)
-
 def scan(fn,
          sequences=None,
          outputs_info=None,
@@ -58,10 +47,10 @@ def scan(fn,
         # n_steps must be provided under cgt
         if n_steps is None:
             raise ValueError('n_steps must be provided for scan to work under CGT')
-        sequences = _wrap_into_list(sequences)
-        non_sequences = _wrap_into_list(non_sequences)
+        sequences = wrap_into_list(sequences)
+        non_sequences = wrap_into_list(non_sequences)
         output_as_list = isinstance(outputs_info, list)
-        outputs_info = _wrap_into_list(outputs_info)
+        outputs_info = wrap_into_list(outputs_info)
         if go_backwards and n_steps < 0:
             go_backwards = False
             n_steps = -n_steps

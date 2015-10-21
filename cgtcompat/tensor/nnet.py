@@ -9,3 +9,9 @@ def sigmoid(x):
         return theano.tensor.nnet.sigmoid(x)
     else:
         return cgt.sigmoid(x)
+
+def relu(x):
+    if is_theano():
+        return theano.tensor.nnet.relu(x)
+    else:
+        return cgt.nn.rectify(x)

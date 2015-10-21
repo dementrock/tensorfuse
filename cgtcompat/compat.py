@@ -1,4 +1,5 @@
 from .config import is_theano
+from utils import wrap_into_list
 if is_theano():
     import theano
     import theano.tensor as T
@@ -63,3 +64,10 @@ def broadcastable(x):
         return x.broadcastable
     else:
         return None
+
+def get_inputs(outputs):
+    if is_theano():
+        return theano.gof.graph.inputs(outputs)
+    else:
+        outputs = list(outputs)
+        return [node for node in cgt.core.topsorted(outputs) if node.is_input()]
