@@ -5,11 +5,23 @@ if is_theano():
 else:
     import cgt
 
-def matrix(name):
+def matrix(name, dtype=None, fixed_shape=None):
     if is_theano():
-        return T.matrix(name)
+        return T.matrix(name, dtype)
     else:
-        return cgt.matrix(name)
+        return cgt.matrix(name, dtype, fixed_shape)
+
+def imatrix(name):
+    if is_theano():
+        return T.imatrix(name)
+    else:
+        return cgt.matrix(name, dtype='int32')
+
+def ivector(name):
+    if is_theano():
+        return T.ivector(name)
+    else:
+        return cgt.vector(name, dtype='int32')
 
 def vector(name):
     if is_theano():
@@ -23,11 +35,11 @@ def scalar(name):
     else:
         return cgt.scalar(name)
 
-def mean(a):
+def mean(x):
     if is_theano():
-        return T.mean(a)
+        return T.mean(x)
     else:
-        return cgt.mean(a)
+        return cgt.mean(x)
 
 def tile(x, reps):
     if is_theano():
@@ -39,22 +51,23 @@ def tile(x, reps):
                 out = cgt.repeat(out, nrep, axis=i)
         return out
 
-def square(a):
+def square(x):
     if is_theano():
-        return T.square(a)
+        return T.square(x)
     else:
-        return cgt.square(a)
+        return cgt.square(x)
 
-def log(a):
+def log(x):
     if is_theano():
-        return T.log(a)
-    import ipdb; ipdb.set_trace()
-
-def exp(a):
-    if is_theano():
-        return T.exp(a)
+        return T.log(x)
     else:
-        return cgt.exp(a)
+        return cgt.log(x)
+
+def exp(x):
+    if is_theano():
+        return T.exp(x)
+    else:
+        return cgt.exp(x)
 
 def prod(*args, **kwargs):
     import ipdb; ipdb.set_trace()
@@ -137,3 +150,9 @@ def sqrt(x):
         return T.sqrt(x)
     else:
         return cgt.sqrt(x)
+
+def arange(n):
+    if is_theano():
+        return T.arange(n)
+    else:
+        return cgt.arange(n)
