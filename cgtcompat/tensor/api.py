@@ -136,7 +136,19 @@ def reshape(x, shp):
     if is_theano():
         return T.reshape(x, shp)
     else:
-        return cgt.reshape(x, shp)
+        from ..utils import wrap_into_tuple
+        import operator
+        shp = wrap_into_tuple(shp)
+        neg_indices = [(idx, shp_slice) for idx, shp_slice in enumerate(shp) if shp_slice == -1]
+        if len(neg_indices) > 1:
+            raise ValueError('At most one reshaped dimension can be -1')
+        elif len(neg_indices) == 1:
+            idx, shp_slice = neg_indices[0]
+            neg_size = reduce(operator.mul, x.shape, 1) // reduce(operator.mul, shp[:idx] + shp[idx+1:], 1)
+            shp = tuple(shp[:idx] + (neg_size,) + shp[idx+1:])
+            return cgt.reshape(x, shp)
+        else:
+            return cgt.reshape(x, shp)
 
 def stack(tensors, axis=0):
     if is_theano():
