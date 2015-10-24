@@ -23,6 +23,19 @@ def ivector(name):
     else:
         return cgt.vector(name, dtype='int32')
 
+def col(name):
+    if is_theano():
+        return T.col(name)
+    else:
+        return cgt.matrix(name, fixed_shape=(None, 1))
+
+def icol(name):
+    if is_theano():
+        return T.icol(name)
+    else:
+        return cgt.matrix(name, dtype='int32', fixed_shape=(None, 1))
+
+
 def vector(name):
     if is_theano():
         return T.vector(name)
@@ -139,6 +152,12 @@ def ones(shape):
     else:
         return cgt.ones(shape)
 
+def ones_like(x):
+    if is_theano():
+        return T.ones_like(x)
+    else:
+        return cgt.ones_like(x)
+
 def concatenate(items, axis=0):
     if is_theano():
         return T.concatenate(items, axis=axis)
@@ -151,8 +170,32 @@ def sqrt(x):
     else:
         return cgt.sqrt(x)
 
-def arange(n):
+def constant(x):
     if is_theano():
-        return T.arange(n)
+        return T.constant(x)
     else:
-        return cgt.arange(n)
+        return cgt.constant(x)
+
+def max(x, axis=None, keepdims=False):
+    if is_theano():
+        return T.max(x, axis=axis, keepdims=keepdims)
+    else:
+        return cgt.max(x, axis=axis, keepdims=keepdims)
+
+def arange(x):
+    if is_theano():
+        return T.arange(x)
+    else:
+        return cgt.arange(x)
+
+def minimum(x, y):
+    if is_theano():
+        return T.minimum(x, y)
+    else:
+        return x * (x < y) + y * (x >= y)
+
+def abs(x):
+    if is_theano():
+        return x.__abs__()
+    else:
+        return cgt.core.Result(cgt.core.ElwiseUnary("abs"), [x])
