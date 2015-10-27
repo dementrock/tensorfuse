@@ -1,4 +1,5 @@
 from ..config import is_theano, is_cgt
+from ..gradient import grad
 if is_theano():
     import theano
     import theano.tensor as T
@@ -36,11 +37,11 @@ def icol(name):
         return cgt.matrix(name, dtype='int32', fixed_shape=(None, 1))
 
 
-def vector(name):
+def vector(name, dtype=None, fixed_shape=None):
     if is_theano():
-        return T.vector(name)
+        return T.vector(name, dtype)
     else:
-        return cgt.vector(name)
+        return cgt.vector(name, dtype, fixed_shape)
 
 def scalar(name):
     if is_theano():
@@ -69,6 +70,8 @@ def square(x):
         return T.square(x)
     else:
         return cgt.square(x)
+
+sqr = square
 
 def log(x):
     if is_theano():
@@ -157,6 +160,20 @@ def stack(tensors, axis=0):
         if axis is not 0:
             raise ValueError('only axis=0 is supported under cgt')
         return cgt.concatenate(map(lambda x: cgt.reshape(x, [1] + x.shape), tensors), axis=0)
+
+def hstack(tensors):
+    if is_theano():
+        return T.horizontal_stack(*tensors)
+    else:
+        return cgt.vstack(tensors)
+
+
+def vstack(tensors):
+    if is_theano():
+        return T.vertical_stack(*tensors)
+    else:
+        return cgt.vstack(tensors)
+
 
 def ones(shape):
     if is_theano():
