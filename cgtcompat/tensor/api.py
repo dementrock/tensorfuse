@@ -228,3 +228,9 @@ def abs(x):
         return x.__abs__()
     else:
         return cgt.core.Result(cgt.core.ElwiseUnary("abs"), [x])
+
+def std(x):
+    if is_theano():
+        return T.std(x)
+    else:
+        return cgt.std(x)
