@@ -65,6 +65,12 @@ def tile(x, reps):
                 out = cgt.repeat(out, nrep, axis=i)
         return out
 
+def switch(x, a, b):
+    if is_theano():
+        return T.switch(x, a, b)
+    else:
+        import ipdb; ipdb.set_trace()
+
 def square(x):
     if is_theano():
         return T.square(x)
@@ -229,8 +235,56 @@ def abs(x):
     else:
         return cgt.core.Result(cgt.core.ElwiseUnary("abs"), [x])
 
+def sin(x):
+    if is_theano():
+        return T.sin(x)
+    else:
+        return cgt.sin(x)
+
+def cos(x):
+    if is_theano():
+        return T.cos(x)
+    else:
+        return cgt.cos(x)
+
+def clip(x, low, high):
+    if is_theano():
+        return T.clip(x, low, high)
+    else:
+        import ipdb; ipdb.set_trace()
+
+def take(x, n, axis=None):
+    if is_theano():
+        return T.take(x, n, axis=axis)
+    else:
+        import ipdb; ipdb.set_trace()
+
 def std(x):
     if is_theano():
         return T.std(x)
     else:
         return cgt.std(x)
+
+def diag(x):
+    if is_theano():
+        return T.diag(x)
+    else:
+        return cgt.diag(x)
+
+def mod(x, y):
+    if is_theano():
+        return T.mod(x, y)
+    else:
+        import ipdb; ipdb.set_trace()
+
+def power(x, n):
+    if is_theano():
+        return T.power(x, n)
+    else:
+        import ipdb; ipdb.set_trace()
+
+def zeros(shape):
+    if is_theano():
+        return T.zeros(shape)
+    else:
+        import ipdb; ipdb.set_trace()

@@ -5,6 +5,7 @@ from operator import itemgetter
 import tensor
 from gradient import grad
 from utils import wrap_into_list
+import random
 
 if is_theano():
     import theano
