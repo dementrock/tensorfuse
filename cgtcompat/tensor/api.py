@@ -234,3 +234,28 @@ def std(x):
         return T.std(x)
     else:
         return cgt.std(x)
+
+def argmax(x, axis=None, keepdims=False):
+    if is_theano():
+        return T.argmax(x, axis=axis, keepdims=keepdims)
+    else:
+        return cgt.argmax(x, axis=axis, keepdims=keepdims)
+
+def argmin(x, axis=None, keepdims=False):
+    if is_theano():
+        return T.argmin(x, axis=axis, keepdims=keepdims)
+    else:
+        return cgt.argmin(x, axis=axis, keepdims=keepdims)
+
+def eq(x, y):
+    if is_theano():
+        return T.eq(x, y)
+    else:
+        return cgt.eq(x, y)
+
+def neq(x, y):
+    if is_theano():
+        return T.neq(x, y)
+    else:
+        return cgt.neq(x, y)
+
