@@ -1,11 +1,12 @@
 import gradient
-from .config import is_theano, is_cgt, is_tf, session
+from .config import is_theano, is_cgt, is_tf, session, floatX
 import compat
 from operator import itemgetter
 import tensor
 from gradient import grad
 from utils import wrap_into_list
 import random
+import numpy as np
 
 if is_theano():
     import theano
@@ -56,7 +57,7 @@ def shared(val, name=None, broadcastable=None, borrow=False):
     elif is_cgt():
         return cgt.shared(val, name=name)
     else:
-        var = tf.Variable(val, name=name)
+        var = tf.Variable(val.astype(floatX), name=name)
         var._cgtcompat_shared = True
         var._cgtcompat_initialized = False
         compat.tf_add_blank_var(var)

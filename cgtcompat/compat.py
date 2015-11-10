@@ -1,4 +1,4 @@
-from .config import is_theano, is_cgt, is_tf
+from .config import is_theano, is_cgt, is_tf, floatX
 from utils import wrap_into_list
 if is_theano():
     import theano
@@ -126,7 +126,8 @@ if is_tf():
 
     def tf_var_from_shape(name, fixed_shape, dtype, ndim):
         if fixed_shape and all(fixed_shape):
-            var = tf.Variable(np.zeros(fixed_shape), name=name)
+            dtype = dtype or floatX
+            var = tf.Variable(np.zeros(fixed_shape, dtype=dtype), name=name)
             var._cgtcompat_initialized = False
             var._cgtcompat_shared = False
             tf_add_blank_var(var)
@@ -135,7 +136,7 @@ if is_tf():
             #raise ValueError('shape must be specified under tensorflow')
             fixed_shape = fixed_shape or [None] * ndim
             dtype = dtype or floatX
-            var = tf.Variable(tf.zeros([]), name=name, validate_shape=False)
+            var = tf.Variable(tf.zeros([], dtype=dtype), name=name, validate_shape=False)
             var._cgtcompat_initialized = False
             var._cgtcompat_shared = False
             tf_add_blank_var(var)

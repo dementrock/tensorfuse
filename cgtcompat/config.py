@@ -18,6 +18,9 @@ if 'CGT_COMPAT_MODE' in os.environ:
     elif os.environ['CGT_COMPAT_MODE'] in ['tensorflow', 'tf']:
         mode = TENSORFLOW
         import tensorflow as tf
+        #_tf_config = tf.core.framework.config_pb2.ConfigProto()
+        #_tf_config.inter_op_parallelism_threads = 4
+        #_tf_config.intra_op_parallelism_threads = 4
         session = tf.Session()
         session.__enter__()
     else:
@@ -45,5 +48,4 @@ elif is_cgt():
     floatX = cgt.floatX
 else:
     print 'Using Tensorflow for CGT compatibility mode'
-    #import tensorflow as tf
-    floatX = 'float64'#None#cgt.floatX
+    floatX = 'float32'
