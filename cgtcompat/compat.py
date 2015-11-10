@@ -68,7 +68,7 @@ def set_value(x, val):
     else:
         import ipdb; ipdb.set_trace()
 
-# check if some object is a node in the computation graph (either a variable, or an operation on variables)
+#no.gof.graph.inputs check if some object is a node in the computation graph (either a variable, or an operation on variables)
 def is_variable(x):
     if is_theano():
         return isinstance(x, theano.gof.Variable)
@@ -89,9 +89,14 @@ def broadcastable(x):
 def get_inputs(outputs):
     if is_theano():
         return theano.gof.graph.inputs(outputs)
-    else:
+    elif is_cgt():
         outputs = list(outputs)
         return [node for node in cgt.core.topsorted(outputs) if node.is_input()]
+    elif is_tf():
+        outputs = list(outputs)
+        return [node for node in _tf_topsorted(outputs) if _tf_is_input(node)]
+    else:
+        import ipdb; ipdb.set_trace()
 
 def shape(x):
     if is_theano():
@@ -153,6 +158,43 @@ if is_tf():
             return tf.square(self)
         return tf.pow(self, x)
 
+    # modified from cgt's topsorted code
+    def _tf_topsorted(outputs):
+        assert isinstance(outputs, (list,tuple))
+        marks = {}
+        out = []
+        stack = [] #pylint: disable=W0621
+        # i: node
+        # jidx = number of children visited so far from that node
+        # marks: state of each node, which is one of
+        #   0: haven't visited
+        #   1: have visited, but not done visiting children
+        #   2: done visiting children
+        for x in outputs:
+            stack.append((x,0))
+            while stack:
+                (i,jidx) = stack.pop()
+                if jidx == 0:
+                    m = marks.get(i,0)
+                    if m == 0:
+                        marks[i] = 1
+                    elif m == 1:
+                        raise ValueError("not a dag")
+                    else:
+                        continue
+                ps = list(i.op.inputs)
+                if jidx == len(ps):
+                    marks[i] = 2
+                    out.append(i)
+                else:
+                    stack.append((i,jidx+1))
+                    j = ps[jidx]
+                    stack.append((j,0))
+        return out
+
+    def _tf_is_input(x):
+        return len(x.op.inputs) == 0
+
     def _mk_tf_getitem(old_getitem):
         def getitem(self, slices):
             try:
@@ -179,3 +221,8 @@ if is_tf():
 
     tf.Variable.__pow__ = _tf_pow
     tf.Tensor.__pow__ = _tf_pow
+
+    @tf.ops.RegisterGradient("Reverse")
+    def _tf_reverse_grad(op, grad):
+        reverse_dims = op.inputs[1]
+        return tf.array_ops.reverse(grad, reverse_dims), None
