@@ -36,8 +36,8 @@ def tensor(dtype, ndim, name=None, fixed_shape=None):
     Create tensor variable from given information
     """
     if is_theano():
-        if fixed_shape is not None:
-            print 'fixed shape ignored in Theano'
+        #if fixed_shape is not None:
+        #    print 'fixed shape ignored in Theano'
         return T.TensorType(dtype, [False] * ndim)(name)
     elif is_cgt():
         return cgt.tensor(dtype, ndim, name, fixed_shape)

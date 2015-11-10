@@ -22,26 +22,23 @@ class TfFunctionWrapper(object):
         self._updates = updates or {}
         self._givens = givens or {}
 
+        self._output_list = wrap_into_list(self._outputs)
+        if self._updates:
+            # cache graph construction
+            self._update_op = tf.group(*[tf.assign(var, val) for var, val in self._updates.iteritems()])
+        else:
+            self._update_op = None
+
     def __call__(self, *args):
-        try:
-            #tasks = []
-            #for var, val in zip(self._inputs, args):
-            #    tasks.append(tf.assign(var, val))
-            compat.tf_ensure_init_variables()
-            session.run([tf.assign(var, val) for var, val in zip(self._inputs, args)])#tasks)
-            output_list = wrap_into_list(self._outputs)
-            n_outputs = len(output_list)
-            results = session.run(output_list + self._updates.values())
-            output_vals = results[:n_outputs]
-            update_vals = results[n_outputs:]
-            session.run([tf.assign(var, val) for var, val in zip(self._updates.keys(), update_vals)])
-            if isinstance(self._outputs, list):
-                return output_vals
-            else:
-                return output_vals[0]
-        except Exception as e:
-            import ipdb; ipdb.set_trace()
-        
+        compat.tf_ensure_init_variables()
+        if self._update_op:
+            output_vals = session.run(self._output_list + [self._update_op], feed_dict=dict(zip(self._inputs, args)))[:-1]
+        else:
+            output_vals = session.run(self._output_list, feed_dict=dict(zip(self._inputs, args)))
+        if isinstance(self._outputs, list):
+            return output_vals
+        else:
+            return output_vals[0]
 
 def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=None, on_unused_input=None):
     if is_theano():
@@ -49,10 +46,6 @@ def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=No
         on_unused_input = on_unused_input or 'raise'
         return theano.function(inputs, outputs, updates=updates, givens=givens, allow_input_downcast=allow_input_downcast, on_unused_input=on_unused_input)
     elif is_cgt():
-        #if allow_input_downcast is not None:
-        #    print 'allow_input_downcast ignored'
-        #if on_unused_input is not None:
-        #    print 'allow_input_downcast ignored'
         return cgt.function(inputs, outputs, updates=updates, givens=givens)
     else:
         return TfFunctionWrapper(inputs=inputs, outputs=outputs, updates=updates, givens=givens)
