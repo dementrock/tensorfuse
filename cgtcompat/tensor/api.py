@@ -1,16 +1,24 @@
-from ..config import is_theano, is_cgt
-from ..gradient import grad
+from cgtcompat.config import is_theano, is_cgt, is_tf
+from cgtcompat.gradient import grad
 if is_theano():
     import theano
     import theano.tensor as T
-else:
+elif is_cgt():
     import cgt
+else:
+    import tensorflow as tf
+    from cgtcompat.compat import tf_var_from_shape
+
+import numpy as np
 
 def matrix(name, dtype=None, fixed_shape=None):
     if is_theano():
         return T.matrix(name, dtype)
-    else:
+    elif is_cgt():
         return cgt.matrix(name, dtype, fixed_shape)
+    else:
+        return tf_var_from_shape(name, fixed_shape, dtype, ndim=2)
+
 
 def imatrix(name):
     if is_theano():
@@ -40,20 +48,28 @@ def icol(name):
 def vector(name, dtype=None, fixed_shape=None):
     if is_theano():
         return T.vector(name, dtype)
-    else:
+    elif is_cgt():
         return cgt.vector(name, dtype, fixed_shape)
+    else:
+        return tf_var_from_shape(name, fixed_shape, dtype, ndim=1)
 
 def scalar(name):
     if is_theano():
         return T.scalar(name)
-    else:
+    elif is_cgt():
         return cgt.scalar(name)
+    else:
+        return tf.Variable(0, name=name)
 
 def mean(x):
     if is_theano():
         return T.mean(x)
-    else:
+    elif is_cgt():
         return cgt.mean(x)
+    elif is_tf():
+        return tf.reduce_mean(x)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def tile(x, reps):
     if is_theano():
@@ -74,8 +90,10 @@ def switch(x, a, b):
 def square(x):
     if is_theano():
         return T.square(x)
-    else:
+    elif is_cgt():
         return cgt.square(x)
+    else:
+        return tf.square(x)
 
 sqr = square
 
@@ -103,20 +121,41 @@ def sum(x, axis=None):
 def dot(x, y):
     if is_theano():
         return T.dot(x, y)
-    else:
+    elif is_cgt():
         return cgt.dot(x, y)
+    elif is_tf():
+        return tf.matmul(x, y)
 
 def dimshuffle(x, *pattern):
     if is_theano():
         return x.dimshuffle(*pattern)
-    else:
+    elif is_cgt():
         return cgt.dimshuffle(x, list(pattern))
+    else:
+        # First, get rid of all occurrences of 'x'
+        pure_pattern = [p for p in pattern if p != 'x']
+        dims = range(x.ndim)
+        perm = list(pure_pattern) + sorted(set(dims) - set(pure_pattern))
+        res = tf.transpose(x, perm=perm)
+        # For each occurrence of 'x', apply expand_dims
+        x_indices = [idx for idx, p in enumerate(pattern) if p == 'x']
+        if len(x_indices) == 0:
+            return res
+        elif len(x_indices) > 1:
+            # too lazy for now
+            import ipdb; ipdb.set_trace()
+        else:
+            return tf.expand_dims(res, x_indices[0])
 
 def tanh(x):
     if is_theano():
         return theano.tensor.tanh(x)
-    else:
+    elif is_cgt():
         return cgt.tanh(x)
+    elif is_tf():
+        return tf.tanh(x)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def _ensure_broadcastable(a, b, bcpat):
     x, y = a, b
@@ -138,13 +177,20 @@ def broadcast(x, a, b, bcpat):
         if x == '*':
             return a * b
         import ipdb; ipdb.set_trace()
-    else:
+    elif is_cgt():
         return cgt.broadcast(x, a, b, bcpat)
+    else:
+        if x == '+':
+            return a + b
+        if x == '*':
+            return a * b
+        import ipdb; ipdb.set_trace()
+
 
 def reshape(x, shp):
     if is_theano():
         return T.reshape(x, shp)
-    else:
+    elif is_cgt():
         from ..utils import wrap_into_tuple
         import operator
         shp = wrap_into_tuple(shp)
@@ -158,14 +204,25 @@ def reshape(x, shp):
             return cgt.reshape(x, shp)
         else:
             return cgt.reshape(x, shp)
+    elif is_tf():
+        return tf.reshape(x, shp)
+    else:
+        import ipdb; ipdb.set_trace()
+
 
 def stack(tensors, axis=0):
     if is_theano():
         return T.stack(tensors, axis=axis)
-    else:
+    elif is_cgt():
         if axis is not 0:
             raise ValueError('only axis=0 is supported under cgt')
         return cgt.concatenate(map(lambda x: cgt.reshape(x, [1] + x.shape), tensors), axis=0)
+    elif is_tf():
+        if axis is not 0:
+            raise ValueError('only axis=0 is supported under tf')
+        return tf.pack(tensors)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def hstack(tensors):
     if is_theano():
@@ -196,14 +253,22 @@ def ones_like(x):
 def concatenate(items, axis=0):
     if is_theano():
         return T.concatenate(items, axis=axis)
-    else:
+    elif is_cgt():
         return cgt.concatenate(items, axis=axis)
+    elif is_tf():
+        return tf.concat(concat_dim=axis, values=items)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def sqrt(x):
     if is_theano():
         return T.sqrt(x)
-    else:
+    elif is_cgt():
         return cgt.sqrt(x)
+    elif is_tf():
+        return tf.sqrt(x)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def constant(x):
     if is_theano():
