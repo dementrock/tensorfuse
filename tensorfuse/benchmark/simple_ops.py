@@ -1,10 +1,15 @@
 import tensorfuse as theano
+from tensorfuse.config import is_tf
+if is_tf():
+    from tensorfuse.compat import tf_reset_session
 import tensorfuse.tensor as TT
 import numpy as np
 import time
 
 def timeit(n):
     def wrap(f):
+        if is_tf():
+            tf_reset_session()
         executor = f()
         ts = time.time()
         for _ in range(n):
@@ -40,3 +45,7 @@ def time_slicing():
     def run():
         f_slice([1,2,3])
     return run
+
+@timeit(10000)
+def time_noop():
+    return theano.function([], [])

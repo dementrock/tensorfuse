@@ -7,7 +7,7 @@ TF = 2
 
 mode = CGT
 
-session = None
+_session = None
 
 
 if 'TENSORFUSE_MODE' in os.environ:
@@ -18,11 +18,8 @@ if 'TENSORFUSE_MODE' in os.environ:
     elif os.environ['TENSORFUSE_MODE'] in ['tensorflow', 'tf']:
         mode = TENSORFLOW
         import tensorflow as tf
-        #_tf_config = tf.core.framework.config_pb2.ConfigProto()
-        #_tf_config.inter_op_parallelism_threads = 4
-        #_tf_config.intra_op_parallelism_threads = 4
-        session = tf.Session()
-        session.__enter__()
+        #session = tf.Session()
+        #session.__enter__()
     else:
         raise ValueError("Unrecognized environment variable TENSORFUSE %s: must be one of 'theano', 'cgt', 'tensorflow', or 'tf'" % os.environ['TENSORFUSE_MODE'])
 
