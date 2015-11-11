@@ -12,13 +12,13 @@ The current API for TensorFuse is geared towards migrating existing Theano-based
 import tensorfuse as theano
 import tensorfuse.tensor as T
 ```
-Then (hopefully) your code can switch between Theano / CGT / TensorFlow easily. The choice is controlled by an environment variable `CGT_COMPAT_MODE`, with valid values `theano`, `cgt`, `tensorflow`, or `tf` for abbreviation (if no environment variable is set, then it defaults to cgt). Therefore, to run the code in Theano mode, you can either set the environment variable before running the script, or add the following to the _beginning_ of the file:
+Then (hopefully) your code can switch between Theano / CGT / TensorFlow easily. The choice is controlled by an environment variable `TENSORFUSE_MODE`, with valid values `theano`, `cgt`, `tensorflow`, or `tf` for abbreviation (if no environment variable is set, then it defaults to cgt). Therefore, to run the code in Theano mode, you can either set the environment variable before running the script, or add the following to the _beginning_ of the file:
 ```python
 import os
-os.environ['CGT_COMPAT_MODE'] = 'theano'
+os.environ['TENSORFUSE_MODE'] = 'theano'
 ```
 To run the code in TensorFlow mode, do the following:
 ```python
 import os
-os.environ['CGT_COMPAT_MODE'] = 'tf' # or 'tensorflow'
+os.environ['TENSORFUSE_MODE'] = 'tf' # or 'tensorflow'
 ```
