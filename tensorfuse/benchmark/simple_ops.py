@@ -33,16 +33,25 @@ def time_sin():
         f_sin([1,2,3])
     return run
 
-@timeit(10000)
-def time_matmul():
-    a = TT.matrix('a')
-    b = TT.matrix('b')
-    f_dot = theano.function([a, b], TT.dot(a, b), allow_input_downcast=True)
-    a_val = np.random.rand(3,3).astype('float32')
-    b_val = np.random.rand(3,3).astype('float32')
-    def run():
-        f_dot(a_val, b_val)
-    return run
+for mat_conf in [(3, 10000),
+                 (64, 10000),
+                 (256, 1000),
+                 (512, 1000),
+                 (1024, 100),
+                 (2048, 100),
+                 (4096, 50),
+                 (8192, 50)]:
+    def time_matmul():
+        a = TT.matrix('a')
+        b = TT.matrix('b')
+        f_dot = theano.function([a, b], TT.dot(a, b), allow_input_downcast=True)
+        a_val = np.random.rand(mat_conf[0], mat_conf[0]).astype('float32')
+        b_val = np.random.rand(mat_conf[0], mat_conf[0]).astype('float32')
+        def run():
+            f_dot(a_val, b_val)
+        return run
+    time_matmul.__name__ = 'time_matmul_%dx%d' % (mat_conf[0], mat_conf[0])
+    timeit(mat_conf[1])(time_matmul)
 
 @timeit(10000)
 def time_slicing():

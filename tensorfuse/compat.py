@@ -310,21 +310,6 @@ if is_tf():
                 import ipdb; ipdb.set_trace()
         return getitem
 
-
-    #tf.Variable.ndim = property(_tf_variable_ndim, "ndim")
-    #tf.Variable.shape = property(_tf_variable_shape, "shape")
-    #tf.Variable.__getitem__ = _mk_tf_getitem(tf.Variable.__getitem__)
-    #tf.Variable.T = property(_tf_obj_transpose, "T")
-    #tf.Variable.sum = _tf_obj_sum
-    #tf.Tensor.ndim = property(_tf_tensor_ndim, "ndim")
-    #tf.Tensor.shape = property(_tf_tensor_shape, "shape")
-    #tf.Tensor.__getitem__ = _mk_tf_getitem(tf.Tensor.__getitem__)
-    #tf.Tensor.T = property(_tf_obj_transpose, "T")
-    #tf.Tensor.sum = _tf_obj_sum
-
-    #tf.Variable.__pow__ = _tf_obj_pow
-    #tf.Tensor.__pow__ = _tf_obj_pow
-
     @tf.ops.RegisterGradient("Reverse")
     def _tf_reverse_grad(op, grad):
         reverse_dims = op.inputs[1]
