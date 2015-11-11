@@ -25,6 +25,6 @@ os.environ['TENSORFUSE_MODE'] = 'tf' # or 'tensorflow'
 
 ## Running Benchmark
 
-```
+```bash
 python tensorfuse/benchmark/run_benchmark.py tensorfuse/benchmark/simple_ops.py
 ```
