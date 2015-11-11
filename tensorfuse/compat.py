@@ -55,7 +55,7 @@ def get_value(x, borrow=None):
         return x.op.get_value()
     else:
         tf_ensure_init_variables()
-        return x.eval()
+        return tf_get_session().run(x)
 
 def set_value(x, val):
     """
@@ -66,7 +66,7 @@ def set_value(x, val):
     elif is_cgt():
         x.op.set_value(val)
     elif is_tf():
-        tf.assign(x, val).eval()
+        tf.get_session().run(tf.assign(x, val))
     else:
         import ipdb; ipdb.set_trace()
 
