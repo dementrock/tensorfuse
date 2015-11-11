@@ -115,11 +115,24 @@ def shape(x):
 
 
 if is_tf():
+    _tf_session = None
     _tf_blank_vars = []
 
+    def tf_get_session():
+        global _tf_session
+        if _tf_session is None:
+            _tf_session = tf.Session()
+        return _tf_session
+
+    def tf_reset_session():
+        global _tf_session
+        if _tf_session:
+            _tf_session.close()
+        _tf_session = tf.Session()
+    
     def tf_ensure_init_variables():
         if len(_tf_blank_vars) > 0:
-            tf.initialize_variables(_tf_blank_vars).run()
+            tf_get_session().run(tf.initialize_variables(_tf_blank_vars))
         del _tf_blank_vars[:]
 
     def tf_add_blank_var(var):

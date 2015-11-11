@@ -18,8 +18,6 @@ if 'TENSORFUSE_MODE' in os.environ:
     elif os.environ['TENSORFUSE_MODE'] in ['tensorflow', 'tf']:
         mode = TENSORFLOW
         import tensorflow as tf
-        #session = tf.Session()
-        #session.__enter__()
     else:
         raise ValueError("Unrecognized environment variable TENSORFUSE %s: must be one of 'theano', 'cgt', 'tensorflow', or 'tf'" % os.environ['TENSORFUSE_MODE'])
 

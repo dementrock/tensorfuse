@@ -1,5 +1,5 @@
 import gradient
-from .config import is_theano, is_cgt, is_tf, session, floatX
+from .config import is_theano, is_cgt, is_tf, floatX
 import compat
 from operator import itemgetter
 import tensor
@@ -31,6 +31,7 @@ class TfFunctionWrapper(object):
             self._update_op = None
 
     def __call__(self, *args):
+        session = compat.tf_get_session()
         compat.tf_ensure_init_variables()
         try:
             if self._update_op:
