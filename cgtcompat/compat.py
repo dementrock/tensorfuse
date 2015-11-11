@@ -136,7 +136,7 @@ if is_tf():
             #raise ValueError('shape must be specified under tensorflow')
             fixed_shape = fixed_shape or [None] * ndim
             dtype = dtype or floatX
-            var = tf.Variable(tf.zeros([], dtype=dtype), name=name, validate_shape=False)
+            var = tf.Variable(tf.zeros([0] * ndim, dtype=dtype), name=name, validate_shape=False)
             var._cgtcompat_initialized = False
             var._cgtcompat_shared = False
             tf_add_blank_var(var)
@@ -154,10 +154,16 @@ if is_tf():
     def _tf_variable_shape(self):
         return map(lambda x: x.value, self._initial_value._shape)
 
-    def _tf_pow(self, x):
+    def _tf_obj_pow(self, x):
         if x == 2:
             return tf.square(self)
         return tf.pow(self, x)
+
+    def _tf_obj_transpose(self):
+        return tf.transpose(self)
+
+    def _tf_obj_sum(self, axis=None):
+        return tf.reduce_sum(self, axis)
 
     # modified from cgt's topsorted code
     def _tf_topsorted(outputs):
@@ -216,12 +222,16 @@ if is_tf():
     tf.Variable.ndim = property(_tf_variable_ndim, "ndim")
     tf.Variable.shape = property(_tf_variable_shape, "shape")
     tf.Variable.__getitem__ = _mk_tf_getitem(tf.Variable.__getitem__)
+    tf.Variable.T = property(_tf_obj_transpose, "T")
+    tf.Variable.sum = _tf_obj_sum
     tf.Tensor.ndim = property(_tf_tensor_ndim, "ndim")
     tf.Tensor.shape = property(_tf_tensor_shape, "shape")
     tf.Tensor.__getitem__ = _mk_tf_getitem(tf.Tensor.__getitem__)
+    tf.Tensor.T = property(_tf_obj_transpose, "T")
+    tf.Tensor.sum = _tf_obj_sum
 
-    tf.Variable.__pow__ = _tf_pow
-    tf.Tensor.__pow__ = _tf_pow
+    tf.Variable.__pow__ = _tf_obj_pow
+    tf.Tensor.__pow__ = _tf_obj_pow
 
     @tf.ops.RegisterGradient("Reverse")
     def _tf_reverse_grad(op, grad):

@@ -84,6 +84,10 @@ def tile(x, reps):
 def switch(x, a, b):
     if is_theano():
         return T.switch(x, a, b)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        return tf.select(x, a, b)
     else:
         import ipdb; ipdb.set_trace()
 
@@ -303,26 +307,51 @@ def abs(x):
 def sin(x):
     if is_theano():
         return T.sin(x)
-    else:
+    elif is_cgt():
         return cgt.sin(x)
+    elif is_tf():
+        return tf.sin(x)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def cos(x):
     if is_theano():
         return T.cos(x)
-    else:
+    elif is_cgt():
         return cgt.cos(x)
+    elif is_tf():
+        return tf.cos(x)
+    else:
+        import ipdb; ipdb.set_trace()
+
 
 def clip(x, low, high):
     if is_theano():
         return T.clip(x, low, high)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        return tf.clip_by_value(x, low, high)
     else:
         import ipdb; ipdb.set_trace()
 
-def take(x, n, axis=None):
+def take(x, indices, axis=None):
     if is_theano():
-        return T.take(x, n, axis=axis)
+        return T.take(x, indices, axis=axis)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        if isinstance(indices, (list, tuple)):
+            import ipdb; ipdb.set_trace()
+        else:
+            if axis:
+                slices = (slice(None),) * axis + (indices,) + (slice(None),) * (x.ndim - axis - 1)
+                return x[slices]
+            else:
+                return tf.reshape(x, [-1])[indices]
     else:
         import ipdb; ipdb.set_trace()
+
 
 def std(x):
     if is_theano():
@@ -375,5 +404,15 @@ def power(x, n):
 def zeros(shape):
     if is_theano():
         return T.zeros(shape)
+    else:
+        import ipdb; ipdb.set_trace()
+
+def cast(x, dtype):
+    if is_theano():
+        return T.cast(x, dtype)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        return tf.cast(x, dtype)
     else:
         import ipdb; ipdb.set_trace()

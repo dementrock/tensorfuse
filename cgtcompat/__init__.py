@@ -32,14 +32,17 @@ class TfFunctionWrapper(object):
 
     def __call__(self, *args):
         compat.tf_ensure_init_variables()
-        if self._update_op:
-            output_vals = session.run(self._output_list + [self._update_op], feed_dict=dict(zip(self._inputs, args)))[:-1]
-        else:
-            output_vals = session.run(self._output_list, feed_dict=dict(zip(self._inputs, args)))
-        if isinstance(self._outputs, list):
-            return output_vals
-        else:
-            return output_vals[0]
+        try:
+            if self._update_op:
+                output_vals = session.run(self._output_list + [self._update_op], feed_dict=dict(zip(self._inputs, args)))[:-1]
+            else:
+                output_vals = session.run(self._output_list, feed_dict=dict(zip(self._inputs, args)))
+            if isinstance(self._outputs, (list, tuple)):
+                return output_vals
+            else:
+                return output_vals[0]
+        except Exception as e:
+            import ipdb; ipdb.set_trace()
 
 def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=None, on_unused_input=None):
     if is_theano():
