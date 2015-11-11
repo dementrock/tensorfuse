@@ -65,6 +65,8 @@ def set_value(x, val):
         x.set_value(val)
     elif is_cgt():
         x.op.set_value(val)
+    elif is_tf():
+        tf.assign(x, val).eval()
     else:
         import ipdb; ipdb.set_trace()
 
@@ -104,10 +106,8 @@ def shape(x):
     elif is_cgt():
         return x.shape
     elif is_tf():
-        if isinstance(x, tf.Tensor):
-            return x._shape
-        elif isinstance(x, tf.Variable):
-            return x._initial_value._shape
+        if isinstance(x, (tf.Tensor, tf.Variable)):
+            return x.shape
         else:
             import ipdb; ipdb.set_trace()
     else:
@@ -128,40 +128,87 @@ if is_tf():
         if fixed_shape and all(fixed_shape):
             dtype = dtype or floatX
             var = tf.Variable(np.zeros(fixed_shape, dtype=dtype), name=name)
-            var._cgtcompat_initialized = False
+            var._cgtcompat_shape_template = fixed_shape
             var._cgtcompat_shared = False
             tf_add_blank_var(var)
             return var
         else:
             #raise ValueError('shape must be specified under tensorflow')
             fixed_shape = fixed_shape or [None] * ndim
+            nominal_shape = map(lambda x: 0 if x is None else x, fixed_shape)
             dtype = dtype or floatX
-            var = tf.Variable(tf.zeros([0] * ndim, dtype=dtype), name=name, validate_shape=False)
-            var._cgtcompat_initialized = False
+            var = tf.Variable(tf.zeros(nominal_shape, dtype=dtype), name=name, validate_shape=False)
+            var._cgtcompat_shape_template = fixed_shape
             var._cgtcompat_shared = False
             tf_add_blank_var(var)
             return var
 
+    # monkey patch a property getter to a class (or a list of classes)
+    def tf_property_getter(cls_or_list, name):
+        def decorator(func):
+            for cls in wrap_into_list(cls_or_list):
+                setattr(cls, name, property(func, name))
+            return func
+        return decorator
+
+    # monkey patch a new method to a class (or a list of classes)
+    def tf_method(cls_or_list, name):
+        def decorator(func):
+            for cls in wrap_into_list(cls_or_list):
+                setattr(cls, name, func)
+            return func
+        return decorator
+
+    # monkey patch an existing method. The function to be decorated should accept
+    # the old method as the input, and return a wrapped method
+    def tf_method_wrapper(cls_or_list, name):
+        def decorator(mk_func):
+            for cls in wrap_into_list(cls_or_list):
+                setattr(cls, name, mk_func(getattr(cls, name)))
+            return mk_func
+        return decorator
+
+    @tf_property_getter(tf.Tensor, "ndim")
     def _tf_tensor_ndim(self):
         return len(self._shape)
 
-    def _tf_tensor_shape(self):
-        return map(lambda x: x.value, self._shape)
+    @tf_property_getter([tf.Variable, tf.Tensor], "shape")
+    def _tf_shape(self):
+        if isinstance(self, tf.Variable):
+            shape = self._initial_value._shape
+        else:
+            shape = self._shape
+        try:
+            if hasattr(self, "_cgtcompat_shape_template"):
+                shape_template = self._cgtcompat_shape_template
+            else:
+                shape_template = shape
+            none_dims = [idx for idx, size in enumerate(shape_template) if size is None]
+            if len(none_dims) > 0:
+                nominal_shape = map(lambda x: x.value, shape)
+                # If one of the dimensions is None when the variable is created,
+                # remember to return a tensor variable as opposed to the actual value
+                return [x if shape_template[idx] is not None else tf.shape(self)[idx] for idx, x in enumerate(nominal_shape)]
+            else:
+                return map(lambda x: x.value, shape)
+        except Exception as e:
+            import ipdb; ipdb.set_trace()
 
+    @tf_property_getter(tf.Variable, "ndim")
     def _tf_variable_ndim(self):
         return len(self._initial_value._shape)
 
-    def _tf_variable_shape(self):
-        return map(lambda x: x.value, self._initial_value._shape)
-
+    @tf_method([tf.Variable, tf.Tensor], "__pow__")
     def _tf_obj_pow(self, x):
         if x == 2:
             return tf.square(self)
         return tf.pow(self, x)
 
+    @tf_property_getter([tf.Variable, tf.Tensor], "T")
     def _tf_obj_transpose(self):
         return tf.transpose(self)
 
+    @tf_method([tf.Variable, tf.Tensor], "sum")
     def _tf_obj_sum(self, axis=None):
         return tf.reduce_sum(self, axis)
 
@@ -202,36 +249,67 @@ if is_tf():
     def _tf_is_input(x):
         return len(x.op.inputs) == 0
 
+    @tf_method_wrapper([tf.Tensor, tf.Variable], "__getitem__")
     def _mk_tf_getitem(old_getitem):
+        def _fix_slice(x_size, s):
+            if x_size is None or not isinstance(s, slice):
+                return s
+            start = s.start
+            stop = s.stop
+            step = s.step
+            if start and start < 0:
+                start = start + x_size
+            if stop and stop < 0:
+                stop = stop + x_size
+            return slice(start, stop, step)
+
         def getitem(self, slices):
             try:
-                if not isinstance(slices, tuple):
+                target = self
+                if not isinstance(slices, (list, tuple)):
                     slices = (slices,)
                 if len(slices) < self.ndim:
-                    slices = slices + (slice(None),) * (self.ndim - len(slices))
-                rev_dims = [idx for idx, x in enumerate(slices) if isinstance(x, slice) and x.step == -1]
+                    slices = tuple(slices) + (slice(None),) * (self.ndim - len(slices))
+                none_dims = [idx for idx, x in enumerate(slices) if x is None]
+                rest_slices = [x for x in slices if x is not None]
+                rest_slices = rest_slices + [slice(None,)] * (self.ndim - len(rest_slices))
+                shape = self.shape
+                rest_slices = [_fix_slice(shape[idx], s) for idx, s in enumerate(rest_slices)]
+                rev_dims = [idx for idx, x in enumerate(rest_slices) if isinstance(x, slice) and x.start is None and x.stop is None and x.step == -1]
+
+                # handle reverse
                 if len(rev_dims) == 1:
                     rev_dim = rev_dims[0]
-                    return tf.reverse(self, [False] * (rev_dim) + [True] + [False] * (self.ndim - rev_dim - 1))
-                return old_getitem(self, slices)
-            except Exception:
+                    target = tf.reverse(self, [False] * (rev_dim) + [True] + [False] * (self.ndim - rev_dim - 1))
+                    # after do the reversal, replace the reversed dims with a wildcard slicing
+                    rest_slices[rev_dim] = slice(None)
+                # handle new axis
+                if len(none_dims) == 0:
+                    return old_getitem(target, rest_slices)
+                elif len(none_dims) == 1:
+                    return tf.expand_dims(old_getitem(target, rest_slices), none_dims[0])
+                else:
+                    import ipdb; ipdb.set_trace()
+
+                    
+            except Exception as e:
                 import ipdb; ipdb.set_trace()
         return getitem
 
 
-    tf.Variable.ndim = property(_tf_variable_ndim, "ndim")
-    tf.Variable.shape = property(_tf_variable_shape, "shape")
-    tf.Variable.__getitem__ = _mk_tf_getitem(tf.Variable.__getitem__)
-    tf.Variable.T = property(_tf_obj_transpose, "T")
-    tf.Variable.sum = _tf_obj_sum
-    tf.Tensor.ndim = property(_tf_tensor_ndim, "ndim")
-    tf.Tensor.shape = property(_tf_tensor_shape, "shape")
-    tf.Tensor.__getitem__ = _mk_tf_getitem(tf.Tensor.__getitem__)
-    tf.Tensor.T = property(_tf_obj_transpose, "T")
-    tf.Tensor.sum = _tf_obj_sum
+    #tf.Variable.ndim = property(_tf_variable_ndim, "ndim")
+    #tf.Variable.shape = property(_tf_variable_shape, "shape")
+    #tf.Variable.__getitem__ = _mk_tf_getitem(tf.Variable.__getitem__)
+    #tf.Variable.T = property(_tf_obj_transpose, "T")
+    #tf.Variable.sum = _tf_obj_sum
+    #tf.Tensor.ndim = property(_tf_tensor_ndim, "ndim")
+    #tf.Tensor.shape = property(_tf_tensor_shape, "shape")
+    #tf.Tensor.__getitem__ = _mk_tf_getitem(tf.Tensor.__getitem__)
+    #tf.Tensor.T = property(_tf_obj_transpose, "T")
+    #tf.Tensor.sum = _tf_obj_sum
 
-    tf.Variable.__pow__ = _tf_obj_pow
-    tf.Tensor.__pow__ = _tf_obj_pow
+    #tf.Variable.__pow__ = _tf_obj_pow
+    #tf.Tensor.__pow__ = _tf_obj_pow
 
     @tf.ops.RegisterGradient("Reverse")
     def _tf_reverse_grad(op, grad):

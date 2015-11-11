@@ -61,8 +61,8 @@ def shared(val, name=None, broadcastable=None, borrow=False):
         return cgt.shared(val, name=name)
     else:
         var = tf.Variable(val.astype(floatX), name=name)
+        var._cgtcompat_shape_template = val.shape
         var._cgtcompat_shared = True
-        var._cgtcompat_initialized = False
         compat.tf_add_blank_var(var)
         return var
 

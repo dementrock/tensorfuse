@@ -74,12 +74,19 @@ def mean(x):
 def tile(x, reps):
     if is_theano():
         return T.tile(x, reps)
-    else:
+    elif is_cgt():
         out = x
         for i, nrep in enumerate(reps):
             if nrep > 1:
                 out = cgt.repeat(out, nrep, axis=i)
         return out
+    elif is_tf():
+        if isinstance(reps, tf.Tensor):
+            return tf.tile(x, reps)
+        else:
+            return tf.tile(x, tf.pack(reps))
+    else:
+        import ipdb; ipdb.set_trace()
 
 def switch(x, a, b):
     if is_theano():
@@ -119,8 +126,12 @@ def prod(*args, **kwargs):
 def sum(x, axis=None):
     if is_theano():
         return T.sum(x, axis=axis)
-    else:
+    elif is_cgt():
         return cgt.sum(x, axis=axis)
+    elif is_tf():
+        return tf.reduce_sum(x, axis)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def dot(x, y):
     if is_theano():
@@ -128,7 +139,18 @@ def dot(x, y):
     elif is_cgt():
         return cgt.dot(x, y)
     elif is_tf():
-        return tf.matmul(x, y)
+        if x.ndim == 2 and y.ndim == 2:
+            return tf.matmul(x, y)
+        elif x.ndim == 1 and y.ndim == 1:
+            return tf.reduce_sum(x * y)
+        elif x.ndim == 1 and y.ndim == 2:
+            return tf.reshape(tf.matmul(tf.expand_dims(x, 0), y), [-1])
+        elif x.ndim == 2 and y.ndim == 1:
+            return tf.reshape(tf.matmul(x, tf.expand_dims(y, 1)), [-1])
+        else:
+            import ipdb; ipdb.set_trace()
+    else:
+        import ipdb; ipdb.set_trace()
 
 def dimshuffle(x, *pattern):
     if is_theano():
@@ -260,7 +282,7 @@ def concatenate(items, axis=0):
     elif is_cgt():
         return cgt.concatenate(items, axis=axis)
     elif is_tf():
-        return tf.concat(concat_dim=axis, values=items)
+        return tf.concat(concat_dim=axis, values=list(items))
     else:
         import ipdb; ipdb.set_trace()
 
@@ -277,8 +299,12 @@ def sqrt(x):
 def constant(x):
     if is_theano():
         return T.constant(x)
-    else:
+    elif is_cgt():
         return cgt.constant(x)
+    elif is_tf():
+        return tf.constant(x)
+    else:
+        import ipdb; ipdb.set_trace()
 
 def max(x, axis=None, keepdims=False):
     if is_theano():
@@ -386,24 +412,47 @@ def neq(x, y):
 def diag(x):
     if is_theano():
         return T.diag(x)
-    else:
+    elif is_cgt():
         return cgt.diag(x)
+    elif is_tf():
+        if x.ndim == 1:
+            return tf.diag(x)
+        else:
+            import ipdb; ipdb.set_trace()
+    else:
+        import ipdb; ipdb.set_trace()
 
 def mod(x, y):
     if is_theano():
         return T.mod(x, y)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        return tf.mod(x, y)
     else:
         import ipdb; ipdb.set_trace()
+
 
 def power(x, n):
     if is_theano():
         return T.power(x, n)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        return tf.pow(x, n)
     else:
         import ipdb; ipdb.set_trace()
 
 def zeros(shape):
     if is_theano():
         return T.zeros(shape)
+    elif is_cgt():
+        import ipdb; ipdb.set_trace()
+    elif is_tf():
+        if isinstance(shape, (list, tuple)):
+            return tf.zeros(shape)
+        else:
+            return tf.zeros([shape])
     else:
         import ipdb; ipdb.set_trace()
 
