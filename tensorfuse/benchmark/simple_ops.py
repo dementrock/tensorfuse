@@ -40,4 +40,3 @@ def time_slicing():
     def run():
         f_slice([1,2,3])
     return run
-

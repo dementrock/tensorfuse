@@ -5,7 +5,7 @@ Common interface for Theano, CGT, and TensorFlow.
 
 The recommended way to install this library is `python setup.py develop`.
 
-w## Usage
+## Usage
 
 The current API for TensorFuse is geared towards migrating existing Theano-based code to using CGT or TensorFlow. Therefore, if you have some code that uses Theano, you can simply change the import statements to
 ```python
@@ -21,4 +21,10 @@ To run the code in TensorFlow mode, do the following:
 ```python
 import os
 os.environ['TENSORFUSE_MODE'] = 'tf' # or 'tensorflow'
+```
+
+## Running Benchmark
+
+```
+python tensorfuse/benchmark/run_benchmark.py tensorfuse/benchmark/simple_ops.py
 ```
