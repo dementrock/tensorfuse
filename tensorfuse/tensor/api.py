@@ -1,5 +1,5 @@
-from cgtcompat.config import is_theano, is_cgt, is_tf
-from cgtcompat.gradient import grad
+from tensorfuse.config import is_theano, is_cgt, is_tf
+from tensorfuse.gradient import grad
 if is_theano():
     import theano
     import theano.tensor as T
@@ -7,7 +7,7 @@ elif is_cgt():
     import cgt
 else:
     import tensorflow as tf
-    from cgtcompat.compat import tf_var_from_shape
+    from tensorfuse.compat import tf_var_from_shape
 
 import numpy as np
 

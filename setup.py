@@ -1,11 +1,11 @@
 from setuptools import setup
 
-setup(name='cgtcompat',
+setup(name='tensorfuse',
       version='0.1',
-      description='Common interface for CGT and Theano',
-      url='http://github.com/dementrock/cgtcompat',
+      description='Common interface for Theano, CGT, and TensorFuse',
+      url='http://github.com/dementrock/tensorfuse',
       author='Rocky Duan',
       author_email='dementrock@gmail.com',
       license='BSD',
-      packages=['cgtcompat'],
+      packages=['tensorfuse'],
       zip_safe=False)

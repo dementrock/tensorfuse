@@ -1,4 +1,4 @@
-from cgtcompat.config import is_theano, is_cgt, is_tf
+from tensorfuse.config import is_theano, is_cgt, is_tf
 if is_theano():
     import theano
     import theano.tensor as T

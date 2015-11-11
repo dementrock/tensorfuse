@@ -18,7 +18,7 @@ def is_shared(x):
     elif is_cgt():
         return isinstance(x, cgt.core.Node) and isinstance(x.op, cgt.core.InMemoryData)
     else:
-        return hasattr(x, '_cgtcompat_shared')
+        return hasattr(x, '_tensorfuse_shared')
         
 
 # In Theano, TensorVariable and SharedVariable are different, and they do not
@@ -118,7 +118,8 @@ if is_tf():
     _tf_blank_vars = []
 
     def tf_ensure_init_variables():
-        tf.initialize_variables(_tf_blank_vars).run()
+        if len(_tf_blank_vars) > 0:
+            tf.initialize_variables(_tf_blank_vars).run()
         del _tf_blank_vars[:]
 
     def tf_add_blank_var(var):
@@ -128,8 +129,8 @@ if is_tf():
         if fixed_shape and all(fixed_shape):
             dtype = dtype or floatX
             var = tf.Variable(np.zeros(fixed_shape, dtype=dtype), name=name)
-            var._cgtcompat_shape_template = fixed_shape
-            var._cgtcompat_shared = False
+            var._tensorfuse_shape_template = fixed_shape
+            var._tensorfuse_shared = False
             tf_add_blank_var(var)
             return var
         else:
@@ -138,8 +139,8 @@ if is_tf():
             nominal_shape = map(lambda x: 0 if x is None else x, fixed_shape)
             dtype = dtype or floatX
             var = tf.Variable(tf.zeros(nominal_shape, dtype=dtype), name=name, validate_shape=False)
-            var._cgtcompat_shape_template = fixed_shape
-            var._cgtcompat_shared = False
+            var._tensorfuse_shape_template = fixed_shape
+            var._tensorfuse_shared = False
             tf_add_blank_var(var)
             return var
 
@@ -179,8 +180,8 @@ if is_tf():
         else:
             shape = self._shape
         try:
-            if hasattr(self, "_cgtcompat_shape_template"):
-                shape_template = self._cgtcompat_shape_template
+            if hasattr(self, "_tensorfuse_shape_template"):
+                shape_template = self._tensorfuse_shape_template
             else:
                 shape_template = shape
             none_dims = [idx for idx, size in enumerate(shape_template) if size is None]

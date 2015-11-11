@@ -10,12 +10,12 @@ mode = CGT
 session = None
 
 
-if 'CGT_COMPAT_MODE' in os.environ:
-    if os.environ['CGT_COMPAT_MODE'] == 'theano':
+if 'TENSORFUSE_MODE' in os.environ:
+    if os.environ['TENSORFUSE_MODE'] == 'theano':
         mode = THEANO
-    elif os.environ['CGT_COMPAT_MODE'] == 'cgt':
+    elif os.environ['TENSORFUSE_MODE'] == 'cgt':
         mode = CGT
-    elif os.environ['CGT_COMPAT_MODE'] in ['tensorflow', 'tf']:
+    elif os.environ['TENSORFUSE_MODE'] in ['tensorflow', 'tf']:
         mode = TENSORFLOW
         import tensorflow as tf
         #_tf_config = tf.core.framework.config_pb2.ConfigProto()
@@ -24,7 +24,7 @@ if 'CGT_COMPAT_MODE' in os.environ:
         session = tf.Session()
         session.__enter__()
     else:
-        raise ValueError('Unrecognized environment variable CGT_COMPAT_MODE %s: must be either theano or cgt' % os.environ['CGT_COMPAT_MODE'])
+        raise ValueError("Unrecognized environment variable TENSORFUSE %s: must be one of 'theano', 'cgt', 'tensorflow', or 'tf'" % os.environ['TENSORFUSE_MODE'])
 
 def is_theano():
     return mode == THEANO
@@ -39,13 +39,13 @@ is_tf = is_tensorflow
 
 
 if is_theano():
-    print 'Using Theano for CGT compatibility mode'
+    print 'Using Theano for TensorFuse'
     import theano
     floatX = theano.config.floatX
 elif is_cgt():
-    print 'Using CGT for CGT compatibility mode'
+    print 'Using CGT for TensorFuse'
     import cgt
     floatX = cgt.floatX
 else:
-    print 'Using Tensorflow for CGT compatibility mode'
+    print 'Using TensorFlow for TensorFuse'
     floatX = 'float32'
