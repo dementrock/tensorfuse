@@ -1,4 +1,4 @@
-from .config import is_theano, is_cgt, is_tf, floatX
+from tensorfuse.config import is_theano, is_cgt, is_tf, floatX
 from utils import wrap_into_list
 if is_theano():
     import theano

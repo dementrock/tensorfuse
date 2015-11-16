@@ -1,24 +1,9 @@
-from ..config import is_theano, is_cgt
+from tensorfuse.config import is_theano, is_cgt, is_tf
 if is_theano():
-    import theano.tensor.nnet
+    from tensorfuse.backend.theano.tensor.nnet import *
+elif is_cgt():
+    from tensorfuse.backend.cgt.tensor.nnet import *
+elif is_tf():
+    from tensorfuse.backend.tensorflow.tensor.nnet import *
 else:
-    import cgt
-    import cgt.nn
-
-def sigmoid(x):
-    if is_theano():
-        return theano.tensor.nnet.sigmoid(x)
-    else:
-        return cgt.sigmoid(x)
-
-def relu(x):
-    if is_theano():
-        return theano.tensor.nnet.relu(x)
-    else:
-        return cgt.nn.rectify(x)
-
-def softmax(x):
-    if is_theano():
-        return theano.tensor.nnet.softmax(x)
-    else:
-        return cgt.nn.softmax(x)
+    raise ValueError('Unknown backend')

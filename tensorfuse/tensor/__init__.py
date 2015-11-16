@@ -1,4 +1,9 @@
-from api import *
-import nnet
-import slinalg
-import nlinalg
+from tensorfuse.config import is_theano, is_cgt, is_tf
+if is_theano():
+    from tensorfuse.backend.theano.tensor import *
+elif is_cgt():
+    from tensorfuse.backend.cgt.tensor import *
+elif is_tf():
+    from tensorfuse.backend.tensorflow.tensor import *
+else:
+    raise ValueError('Unknown backend')

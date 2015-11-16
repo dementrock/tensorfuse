@@ -5,7 +5,7 @@ CGT = 1
 TENSORFLOW = 2
 TF = 2
 
-mode = CGT
+mode = THEANO
 
 _session = None
 
