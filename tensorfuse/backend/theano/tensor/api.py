@@ -205,3 +205,11 @@ def zeros(shape):
 
 def cast(x, dtype):
     return T.cast(x, dtype)
+
+
+def outer(x, y):
+    return T.outer(x, y)
+
+
+def eye(n):
+    return T.eye(n)

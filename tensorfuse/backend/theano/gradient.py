@@ -1,5 +1,4 @@
 import theano
-import theano.tensor as T
 
 
 def grad(cost, wrt, known_grads=None):
@@ -12,3 +11,7 @@ def grad_clip(x, lower_bound, upper_bound):
 
 def jacobian(expression, wrt):
     return theano.gradient.jacobian(expression, wrt, disconnected_inputs='warn')
+
+
+def hessian(expression, wrt):
+    return theano.gradient.hessian(expression, wrt, disconnected_inputs='warn')
