@@ -7,6 +7,10 @@ def matrix(name, dtype=None, fixed_shape=None):
     return T.matrix(name, dtype)
 
 
+def tensor(name, ndim, dtype=None):
+    return T.TensorType(dtype, (False,)*ndim)(name)
+
+
 def imatrix(name):
     return T.imatrix(name)
 
