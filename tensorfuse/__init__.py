@@ -1,5 +1,5 @@
 import gradient
-from .config import is_theano, is_cgt, is_tf, floatX
+from .config import is_theano, is_cgt, is_tf, is_mxnet, floatX
 import compat
 import tensor
 from gradient import grad
@@ -12,8 +12,13 @@ if is_theano():
     import theano
 elif is_cgt():
     import cgt
-else:
+elif is_tf():
     import tensorflow as tf
+elif is_mxnet():
+    import mxnet as mx
+else:
+    raise ValueError('Unknown backend')
+
 
 class TfFunctionWrapper(object):
 
@@ -21,6 +26,8 @@ class TfFunctionWrapper(object):
         self._inputs = inputs or []
         self._outputs = outputs or []
         self._updates = updates or {}
+        if givens:
+            raise NotImplementedError
         self._givens = givens or {}
 
         self._output_list = wrap_into_list(self._outputs)
@@ -45,6 +52,40 @@ class TfFunctionWrapper(object):
         except Exception as e:
             import ipdb; ipdb.set_trace()
 
+
+class MxFunctionWrapper(object):
+
+    def __init__(self, inputs, outputs, updates, givens):
+        self._inputs = inputs or []
+        self._outputs = outputs or []
+        self._updates = updates or {}
+
+        if isinstance(outputs, (list, tuple)):
+            output_sym = mx.symbol.Group(outputs)
+        else:
+            output_sym = outputs
+        names = [x.list_outputs()[0] for x in inputs]
+        self._names = names
+        self._output_sym = output_sym
+        # expr = output_sym.bind(ctx=mx.cpu(), args=args)
+        # import ipdb; ipdb.set_trace()
+        if givens:
+            raise NotImplementedError
+        self._givens = givens or {}
+        self._executor = None
+
+    def __call__(self, *args):
+        vals = [mx.nd.array(x) for x in args]
+        if not self._executor:
+            executor = self._output_sym.bind(
+                ctx=mx.cpu(), args=dict(zip(self._names, vals)))
+            self._executor = executor
+            self._executor.forward()
+        else:
+            self._executor.forward(**dict(zip(self._names, vals)))
+        return self._executor.outputs
+
+
 def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=None, on_unused_input=None):
     if is_theano():
         allow_input_downcast = allow_input_downcast or False
@@ -52,8 +93,11 @@ def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=No
         return theano.function(inputs, outputs, updates=updates, givens=givens, allow_input_downcast=allow_input_downcast, on_unused_input=on_unused_input)
     elif is_cgt():
         return cgt.function(inputs, outputs, updates=updates, givens=givens)
-    else:
+    elif is_tf():
         return TfFunctionWrapper(inputs=inputs, outputs=outputs, updates=updates, givens=givens)
+    elif is_mxnet():
+        return MxFunctionWrapper(inputs=inputs, outputs=outputs, updates=updates, givens=givens)
+
 
 def shared(val, name=None, broadcastable=None, borrow=False):
     if is_theano():

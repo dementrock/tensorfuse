@@ -1,4 +1,4 @@
-from .config import is_theano, is_cgt, is_tf
+from tensorfuse.config import is_theano, is_cgt, is_tf
 if is_theano():
     import theano
     from theano.tensor.shared_randomstreams import RandomStreams
