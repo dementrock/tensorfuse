@@ -10,6 +10,10 @@ def grad(cost, wrt, known_grads=None):
         return ret[0] or tf.zeros_like(wrt)
 
 
+def grad_clip(x, lb, ub):
+    return x
+
+
 def jacobian(expression, wrt):
     # copying theano's implementation, which is based on scan
     #from theano.tensor import arange

@@ -11,3 +11,7 @@ def relu(x):
 
 def softmax(x):
     return theano.tensor.nnet.softmax(x)
+
+
+def softplus(x):
+    return theano.tensor.nnet.softplus(x)

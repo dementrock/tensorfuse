@@ -27,7 +27,7 @@ def tile(x, reps):
 
 
 def switch(x, a, b):
-    return tf.select(x, a, b)
+    return tf.select(tf.cast(x, 'bool'), a, b)
 
 
 def square(x):
@@ -50,6 +50,10 @@ def dot(x, y):
         return tf.reshape(tf.matmul(tf.expand_dims(x, 0), y), [-1])
     elif x.ndim == 2 and y.ndim == 1:
         return tf.reshape(tf.matmul(x, tf.expand_dims(y, 1)), [-1])
+    elif x.ndim == 3 and y.ndim == 2:
+        x_reshaped = tf.reshape(x, [x.shape[0] * x.shape[1], x.shape[2]])
+        res = tf.matmul(x_reshaped, y)
+        return tf.reshape(res, [x.shape[0], x.shape[1], y.shape[1]])
     else:
         import ipdb; ipdb.set_trace()
 
@@ -163,5 +167,16 @@ def zeros(shape):
         return tf.zeros([shape])
 
 
+def ones(shape):
+    if isinstance(shape, (list, tuple)):
+        return tf.ones(shape)
+    else:
+        return tf.ones([shape])
+
+
 def cast(x, dtype):
     return tf.cast(x, dtype)
+
+
+def flatten(x):
+    return tf.reshape(x, [-1])

@@ -217,3 +217,7 @@ def outer(x, y):
 
 def eye(n):
     return T.eye(n)
+
+
+def flatten(x):
+    return T.flatten(x)
