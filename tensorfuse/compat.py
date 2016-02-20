@@ -7,6 +7,7 @@ elif is_cgt():
     import cgt
 else:
     import tensorflow as tf
+    from tensorflow.python.framework import ops
 import numpy as np
 
 def is_shared(x):
@@ -186,6 +187,8 @@ if is_tf():
     def _tf_tensor_ndim(self):
         return len(self._shape)
 
+    old_tf_shape = tf.Variable
+
     @tf_property_getter([tf.Variable, tf.Tensor], "shape")
     def _tf_shape(self):
         if isinstance(self, tf.Variable):
@@ -193,6 +196,8 @@ if is_tf():
         else:
             shape = self._shape
         try:
+            if shape.ndims is None:
+                return tf.shape(self)
             if hasattr(self, "_tensorfuse_shape_template"):
                 shape_template = self._tensorfuse_shape_template
             else:
@@ -263,6 +268,8 @@ if is_tf():
     def _tf_is_input(x):
         return len(x.op.inputs) == 0
 
+    tf_tensor_getitem = tf.Tensor.__getitem__
+    tf_variable_getitem = tf.Variable.__getitem__
     @tf_method_wrapper([tf.Tensor, tf.Variable], "__getitem__")
     def _mk_tf_getitem(old_getitem):
         def _fix_slice(x_size, s):
@@ -292,12 +299,17 @@ if is_tf():
                 rev_dims = [idx for idx, x in enumerate(rest_slices) if isinstance(x, slice) and x.start is None and x.stop is None and x.step == -1]
 
                 # handle reverse
-                if len(rev_dims) == 1:
-                    rev_dim = rev_dims[0]
-                    target = tf.reverse(self, [False] * (rev_dim) + [True] + [False] * (self.ndim - rev_dim - 1))
+                for rev_dim in rev_dims:
+                    target = tf.reverse(target, [False] * (rev_dim) + [True] + [False] * (self.ndim - rev_dim - 1))
                     # after do the reversal, replace the reversed dims with a wildcard slicing
                     rest_slices[rev_dim] = slice(None)
                 # handle new axis
+                if isinstance(target, tf.Tensor):
+                    old_getitem = tf_tensor_getitem
+                elif isinstance(target, tf.Variable):
+                    old_getitem = tf_variable_getitem
+                else:
+                    import ipdb; ipdb.set_trace()
                 if len(none_dims) == 0:
                     return old_getitem(target, rest_slices)
                 elif len(none_dims) == 1:
@@ -307,10 +319,7 @@ if is_tf():
 
                     
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 import ipdb; ipdb.set_trace()
         return getitem
-
-    @tf.ops.RegisterGradient("Reverse")
-    def _tf_reverse_grad(op, grad):
-        reverse_dims = op.inputs[1]
-        return tf.array_ops.reverse(grad, reverse_dims), None

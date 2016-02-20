@@ -1,20 +1,11 @@
-from tensorfuse.config import is_theano, is_cgt, is_tf
+from tensorfuse.config import is_theano, is_cgt, is_tf, is_mxnet
 if is_theano():
-    import theano
-    from theano.tensor.shared_randomstreams import RandomStreams
-    _srng = RandomStreams(seed=234)
+    from tensorfuse.backend.theano.random import *
 elif is_cgt():
-    import cgt
+    from tensorfuse.backend.cgt.random import *
 elif is_tf():
-    import tensorflow as tf
-
-
-def uniform(size=(), low=0.0, high=1.0, ndim=None):
-    if is_theano():
-        return _srng.uniform(size=size, low=low, high=high, ndim=ndim)
-    elif is_cgt():
-        import ipdb; ipdb.set_trace()
-    elif is_tf():
-        return tf.random_uniform(size, low, high)
-    else:
-        import ipdb; ipdb.set_trace()
+    from tensorfuse.backend.tensorflow.random import *
+elif is_mxnet():
+    from tensorfuse.backend.mxnet.random import *
+else:
+    raise ValueError('Unknown backend')

@@ -33,7 +33,8 @@ class TfFunctionWrapper(object):
         self._output_list = wrap_into_list(self._outputs)
         if self._updates:
             # cache graph construction
-            self._update_op = tf.group(*[tf.assign(var, val) for var, val in self._updates.iteritems()])
+            self._update_op = tf.group(
+                *[tf.assign(var, val) for var, val in self._updates.iteritems()])
         else:
             self._update_op = None
 
@@ -42,15 +43,20 @@ class TfFunctionWrapper(object):
         compat.tf_ensure_init_variables()
         try:
             if self._update_op:
-                output_vals = session.run(self._output_list + [self._update_op], feed_dict=dict(zip(self._inputs, args)))[:-1]
+                output_vals = session.run(
+                    self._output_list + [self._update_op], feed_dict=dict(zip(self._inputs, args)))[:-1]
             else:
-                output_vals = session.run(self._output_list, feed_dict=dict(zip(self._inputs, args)))
+                output_vals = session.run(
+                    self._output_list, feed_dict=dict(zip(self._inputs, args)))
             if isinstance(self._outputs, (list, tuple)):
                 return output_vals
             else:
                 return output_vals[0]
         except Exception as e:
-            import ipdb; ipdb.set_trace()
+            import traceback
+            traceback.print_exc()
+            import ipdb
+            ipdb.set_trace()
 
 
 class MxFunctionWrapper(object):

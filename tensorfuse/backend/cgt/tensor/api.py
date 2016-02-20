@@ -1,5 +1,6 @@
 import cgt
 
+
 def matrix(name, dtype=None, fixed_shape=None):
     return cgt.matrix(name, dtype, fixed_shape)
 
@@ -10,6 +11,10 @@ def imatrix(name):
 
 def ivector(name):
     return cgt.vector(name, dtype='int32')
+
+
+def tensor4(name=None, dtype=None, fixed_shape=None):
+    return cgt.tensor4(name, dtype, fixed_shape)
 
 
 def col(name):
@@ -64,6 +69,8 @@ def dot(x, y):
 
 
 def dimshuffle(x, *pattern):
+    if isinstance(pattern[0], (list, tuple)):
+        pattern = pattern[0]
     return cgt.dimshuffle(x, list(pattern))
 
 
@@ -79,13 +86,15 @@ def reshape(x, shp):
     from ..utils import wrap_into_tuple
     import operator
     shp = wrap_into_tuple(shp)
-    neg_indices = [(idx, shp_slice) for idx, shp_slice in enumerate(shp) if shp_slice == -1]
+    neg_indices = [(idx, shp_slice)
+                   for idx, shp_slice in enumerate(shp) if shp_slice == -1]
     if len(neg_indices) > 1:
         raise ValueError('At most one reshaped dimension can be -1')
     elif len(neg_indices) == 1:
         idx, shp_slice = neg_indices[0]
-        neg_size = reduce(operator.mul, x.shape, 1) // reduce(operator.mul, shp[:idx] + shp[idx+1:], 1)
-        shp = tuple(shp[:idx] + (neg_size,) + shp[idx+1:])
+        neg_size = reduce(
+            operator.mul, x.shape, 1) // reduce(operator.mul, shp[:idx] + shp[idx + 1:], 1)
+        shp = tuple(shp[:idx] + (neg_size,) + shp[idx + 1:])
         return cgt.reshape(x, shp)
     else:
         return cgt.reshape(x, shp)
@@ -171,3 +180,7 @@ def neq(x, y):
 
 def diag(x):
     return cgt.diag(x)
+
+
+def flatten(x, outdim=1):
+    return cgt.flatten(x)

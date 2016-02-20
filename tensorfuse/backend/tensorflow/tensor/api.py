@@ -1,6 +1,5 @@
 import tensorflow as tf
 from tensorfuse.compat import tf_var_from_shape
-import numpy as np
 
 
 def matrix(name, dtype=None, fixed_shape=None):
@@ -9,6 +8,14 @@ def matrix(name, dtype=None, fixed_shape=None):
 
 def vector(name, dtype=None, fixed_shape=None):
     return tf_var_from_shape(name, fixed_shape, dtype, ndim=1)
+
+
+def ivector(name, fixed_shape=None):
+    return vector(name, 'int32', fixed_shape)
+
+
+def tensor4(name, dtype=None, fixed_shape=None):
+    return tf_var_from_shape(name, fixed_shape, dtype, ndim=4)
 
 
 def scalar(name):
@@ -55,10 +62,13 @@ def dot(x, y):
         res = tf.matmul(x_reshaped, y)
         return tf.reshape(res, [x.shape[0], x.shape[1], y.shape[1]])
     else:
-        import ipdb; ipdb.set_trace()
+        import ipdb
+        ipdb.set_trace()
 
 
 def dimshuffle(x, *pattern):
+    if isinstance(pattern[0], (list, tuple)) and len(pattern) == 1:
+        pattern = pattern[0]
     # First, get rid of all occurrences of 'x'
     pure_pattern = [p for p in pattern if p != 'x']
     dims = range(x.ndim)
@@ -68,11 +78,18 @@ def dimshuffle(x, *pattern):
     x_indices = [idx for idx, p in enumerate(pattern) if p == 'x']
     if len(x_indices) == 0:
         return res
-    elif len(x_indices) > 1:
-        # too lazy for now
-        import ipdb; ipdb.set_trace()
+    # elif len(x_indices) > 1:
+    #     # too lazy for now
+    #     import ipdb
+    #     ipdb.set_trace()
     else:
-        return tf.expand_dims(res, x_indices[0])
+        # we need to apply the expansion backwards to make sure that the
+        # indices make sense
+        for ind in x_indices:
+            res = tf.expand_dims(res, ind)
+        return res
+        # rev_inds = sorted(x_indices)[::-1]
+        # return tf.expand_dims(res, x_indices[0])
 
 
 def tanh(x):
@@ -86,10 +103,12 @@ def _ensure_broadcastable(a, b, bcpat):
     ypat = ypat.strip()
     for i, xent in enumerate(xpat):
         if xent == '1' and not a.broadcastable[i]:
-            raise ValueError('The %dth dimension of %s is not broadcastable', i, str(a))
+            raise ValueError(
+                'The %dth dimension of %s is not broadcastable', i, str(a))
     for i, yent in enumerate(ypat):
         if yent == '1' and not b.broadcastable[i]:
-            raise ValueError('The %dth dimension of %s is not broadcastable', i, str(b))
+            raise ValueError(
+                'The %dth dimension of %s is not broadcastable', i, str(b))
 
 
 def broadcast(x, a, b, bcpat):
@@ -97,7 +116,8 @@ def broadcast(x, a, b, bcpat):
         return a + b
     if x == '*':
         return a * b
-    import ipdb; ipdb.set_trace()
+    import ipdb
+    ipdb.set_trace()
 
 
 def reshape(x, shp):
@@ -136,10 +156,12 @@ def clip(x, low, high):
 
 def take(x, indices, axis=None):
     if isinstance(indices, (list, tuple)):
-        import ipdb; ipdb.set_trace()
+        import ipdb
+        ipdb.set_trace()
     else:
         if axis:
-            slices = (slice(None),) * axis + (indices,) + (slice(None),) * (x.ndim - axis - 1)
+            slices = (slice(None),) * axis + (indices,) + \
+                (slice(None),) * (x.ndim - axis - 1)
             return x[slices]
         else:
             return tf.reshape(x, [-1])[indices]
@@ -149,7 +171,8 @@ def diag(x):
     if x.ndim == 1:
         return tf.diag(x)
     else:
-        import ipdb; ipdb.set_trace()
+        import ipdb
+        ipdb.set_trace()
 
 
 def mod(x, y):
@@ -178,5 +201,20 @@ def cast(x, dtype):
     return tf.cast(x, dtype)
 
 
-def flatten(x):
-    return tf.reshape(x, [-1])
+def flatten(x, outdim=1):
+    if outdim == 1:
+        return tf.reshape(x, [-1])
+    else:
+        return tf.reshape(x, [x.shape[0], -1])
+
+
+def max():
+    raise NotImplementedError
+
+
+def eq(x, y):
+    return tf.equal(x, y)
+
+
+def argmax(x, axis):
+    return tf.argmax(x, dimension=axis)

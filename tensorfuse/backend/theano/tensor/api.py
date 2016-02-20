@@ -1,4 +1,3 @@
-import theano
 import theano.tensor as T
 
 
@@ -8,7 +7,7 @@ def matrix(name, dtype=None, fixed_shape=None):
 
 
 def tensor(name, ndim, dtype=None):
-    return T.TensorType(dtype, (False,)*ndim)(name)
+    return T.TensorType(dtype, (False,) * ndim)(name)
 
 
 def imatrix(name):
@@ -17,6 +16,10 @@ def imatrix(name):
 
 def ivector(name):
     return T.ivector(name)
+
+
+def tensor4(name, fixed_shape=None):
+    return T.tensor4(name)
 
 
 def col(name):
@@ -63,7 +66,8 @@ def exp(x):
 
 
 def prod(*args, **kwargs):
-    import ipdb; ipdb.set_trace()
+    import ipdb
+    ipdb.set_trace()
 
 
 def sum(x, axis=None):
@@ -89,10 +93,12 @@ def _ensure_broadcastable(a, b, bcpat):
     ypat = ypat.strip()
     for i, xent in enumerate(xpat):
         if xent == '1' and not a.broadcastable[i]:
-            raise ValueError('The %dth dimension of %s is not broadcastable', i, str(a))
+            raise ValueError(
+                'The %dth dimension of %s is not broadcastable', i, str(a))
     for i, yent in enumerate(ypat):
         if yent == '1' and not b.broadcastable[i]:
-            raise ValueError('The %dth dimension of %s is not broadcastable', i, str(b))
+            raise ValueError(
+                'The %dth dimension of %s is not broadcastable', i, str(b))
 
 
 def broadcast(x, a, b, bcpat):
@@ -101,7 +107,8 @@ def broadcast(x, a, b, bcpat):
         return a + b
     if x == '*':
         return a * b
-    import ipdb; ipdb.set_trace()
+    import ipdb
+    ipdb.set_trace()
 
 
 def reshape(x, shp):
@@ -154,6 +161,7 @@ def minimum(x, y):
 
 def abs(x):
     return x.__abs__()
+
 
 def sin(x):
     return T.sin(x)
@@ -219,5 +227,9 @@ def eye(n):
     return T.eye(n)
 
 
-def flatten(x):
-    return T.flatten(x)
+def flatten(x, outdim=1):
+    return T.flatten(x, outdim=outdim)
+
+
+def shape_padright(x, n_ones=1):
+    return T.shape_padright(x, n_ones)
