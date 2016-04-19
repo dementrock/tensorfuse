@@ -1,0 +1,10 @@
+name: tensorfuse
+channels:
+    - https://conda.anaconda.org/jjhelmus
+dependencies:
+    - python==2.7.10
+    - tensorflow
+    - pip:
+        - git+https://github.com/Theano/Theano.git@9d0c52b9254c0d30dacbf1e2a231112ee3e3b99a#egg=Theano
+        - ipdb
+        - nose2
