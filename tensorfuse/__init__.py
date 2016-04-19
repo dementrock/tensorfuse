@@ -24,7 +24,10 @@ class TfFunctionWrapper(object):
 
     def __init__(self, inputs, outputs, updates, givens):
         self._inputs = inputs or []
-        self._outputs = outputs or []
+        if outputs is None:
+            self._outputs = []
+        else:
+            self._outputs = outputs
         self._updates = updates or {}
         if givens:
             raise NotImplementedError
