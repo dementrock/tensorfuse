@@ -41,3 +41,5 @@ def test_switch():
         return result
 
     np.testing.assert_array_equal(result(theano, TT), result(tf_theano, tf_TT))
+
+# TODO test reshape ([1, 1])

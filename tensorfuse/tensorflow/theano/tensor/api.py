@@ -1,6 +1,7 @@
 import tensorflow as tf
-from tensorfuse.tensorflow.compat import tf_var_from_shape
+from tensorfuse.tensorflow.compat import tf_var_from_shape, tf_method_wrapper, get_raw_dimensions
 from tensorfuse.tensorflow.compat import tf_method, tf_get_session, tf_ensure_init_variables, tf_property_getter
+from tensorflow.python.framework import ops
 
 
 class TensorType(object):
@@ -41,11 +42,24 @@ def mean(x):
     return tf.reduce_mean(x)
 
 
-def tile(x, reps):
+def tile(x, reps, ndim=None):
+    if ndim is not None and ndim != x.ndim:
+        raise NotImplementedError
     if isinstance(reps, tf.Tensor):
         return tf.tile(x, reps)
     else:
         return tf.tile(x, tf.pack(reps))
+
+
+def maximum(x, y):
+    return tf.maximum(x, y)
+
+
+def exp(x):
+    result = tf.exp(x)
+    if get_raw_dimensions(result).ndims is None:
+        result.set_shape(get_raw_dimensions(x))
+    return result
 
 
 def switch(x, a, b):
@@ -65,7 +79,20 @@ sqr = square
 
 
 def sum(x, axis=None):
-    return tf.reduce_sum(x, axis)
+    if isinstance(x, list):
+        x = tf.pack(x)
+    if axis is None:
+        result = tf.reduce_sum(x)
+        result_shape = []
+    else:
+        if axis < 0:
+            axis = x.ndim + axis
+        result = tf.reduce_sum(x, axis)
+        result_shape = get_raw_dimensions(x)
+        result_shape = list(result_shape[:axis]) + list(result_shape[axis+1:])
+    if get_raw_dimensions(result).ndims is None:
+        result.set_shape(result_shape)
+    return result
 
 
 def dot(x, y):
@@ -143,7 +170,9 @@ def broadcast(x, a, b, bcpat):
 def reshape(x, shp):
     if isinstance(shp, tuple):
         shp = list(shp)
-    return tf.reshape(x, tf.pack(shp))
+    if any(isinstance(s, (tf.Variable, tf.Tensor)) for s in shp):
+        shp = tf.pack(shp)
+    return tf.reshape(x, shp)
 
 
 def stack(tensors, axis=0):
@@ -153,7 +182,8 @@ def stack(tensors, axis=0):
 
 
 def concatenate(items, axis=0):
-    return tf.concat(concat_dim=axis, values=list(items))
+    items = [tf.pack(x) if isinstance(x, list) else x for x in items]
+    return tf.concat(concat_dim=axis, values=items)
 
 
 def sqrt(x):
@@ -266,3 +296,70 @@ def _tf_variable_get_value(self, borrow=None):
 @tf_property_getter([tf.Variable], "broadcastable")
 def _tf_variable_broadcastable(self):
     return [True] * len(self.shape)
+
+
+_old_sub = getattr(ops.Tensor, "__sub__")
+@tf_method([tf.Variable, tf.Tensor], "__sub__")
+def _tf_sub(self, other):
+    self_dim = list(get_raw_dimensions(self))
+    other_dim = list(get_raw_dimensions(other))
+
+    if isinstance(self, tf.Variable):
+        self = self._AsTensor()
+    if isinstance(other, tf.Variable):
+        other = other._AsTensor()
+    result = _old_sub(self, other)
+    result_dim = get_raw_dimensions(result)
+    if result_dim.ndims is None:
+        # we could infer the shape in this case
+        if len(self_dim) > len(other_dim):
+            result.set_shape(self_dim)
+        else:
+            result.set_shape(other_dim)
+    return result
+
+
+_old_mul = getattr(ops.Tensor, "__mul__")
+@tf_method([tf.Variable, tf.Tensor], "__mul__")
+def _tf_mul(self, other):
+    self_dim = get_raw_dimensions(self)
+    other_dim = get_raw_dimensions(other)
+    if isinstance(self, tf.Variable):
+        self = self._AsTensor()
+    if isinstance(other, tf.Variable):
+        other = other._AsTensor()
+    if self_dim.ndims is not None and other_dim.ndims is not None:
+        result = _old_mul(self, other)
+        result_dim = get_raw_dimensions(result)
+        if result_dim.ndims is None:
+            # we could infer the shape in this case
+            if len(self_dim) > len(other_dim):
+                result.set_shape(self_dim)
+            else:
+                result.set_shape(other_dim)
+        return result
+    else:
+        return _old_mul(self, other)
+
+
+_old_rmul = getattr(ops.Tensor, "__rmul__")
+@tf_method([tf.Variable, tf.Tensor], "__rmul__")
+def _tf_rmul(self, other):
+    self_dim = list(get_raw_dimensions(self))
+    other_dim = list(get_raw_dimensions(other))
+
+    if isinstance(self, tf.Variable):
+        self = self._AsTensor()
+    if isinstance(other, tf.Variable):
+        other = other._AsTensor()
+    if not self.dtype.is_floating and isinstance(other, float):
+        self = tf.cast(self, tf.float32)
+    result = _old_rmul(self, other)
+    result_dim = get_raw_dimensions(result)
+    if result_dim.ndims is None:
+        # we could infer the shape in this case
+        if len(self_dim) > len(other_dim):
+            result.set_shape(self_dim)
+        else:
+            result.set_shape(other_dim)
+    return result

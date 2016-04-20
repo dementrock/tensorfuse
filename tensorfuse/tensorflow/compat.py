@@ -209,8 +209,10 @@ old_tf_shape = tf.Variable
 def get_raw_dimensions(x):
     if isinstance(x, tf.Variable):
         return x._initial_value._shape
-    else:
+    elif isinstance(x, tf.Tensor):
         return x._shape
+    else:
+        return get_raw_dimensions(tf.convert_to_tensor(x))
 
 
 @tf_property_getter([tf.Variable, tf.Tensor], "shape")
