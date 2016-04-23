@@ -65,12 +65,12 @@ class TfFunctionWrapper(object):
             ipdb.set_trace()
 
 
-def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=None, on_unused_input=None):
+def function(inputs, outputs, updates=None, givens=None, allow_input_downcast=None, on_unused_input=None, mode=None):
     return TfFunctionWrapper(inputs=inputs, outputs=outputs, updates=updates, givens=givens)
 
 
 def shared(val, name=None, broadcastable=None, borrow=False):
-    var = tf.Variable(val.astype(config.floatX), name=name)
+    var = tf.Variable(val.astype(config.floatX), name="x")
     var._tensorfuse_shape_template = val.shape
     var._tensorfuse_shared = True
     compat.tf_add_blank_var(var)
@@ -99,7 +99,6 @@ def scan(fn,
             raise NotImplementedError
     if outputs_info is not None:
         outputs_info = wrap_into_list(outputs_info)
-
 
     # if go_backwards:
     #     raise NotImplementedError
@@ -156,7 +155,7 @@ def scan(fn,
 
         def compute(i, *all_inputs):
             if go_backwards:
-                fn_inputs = [e_ta.read(n-1-i) for e_ta in sequences_ta]
+                fn_inputs = [e_ta.read(n - 1 - i) for e_ta in sequences_ta]
             else:
                 fn_inputs = [e_ta.read(i) for e_ta in sequences_ta]
             acc_ta_n = list(all_inputs[:len(acc_ta)])

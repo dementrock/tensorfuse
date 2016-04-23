@@ -10,11 +10,15 @@ class TensorType(object):
             raise NotImplementedError
         self.dtype = dtype
         self.broadcastable = broadcastable
+        if name is not None and ':' in name:
+            name = name.split(':')[0]
         self.name = name
 
     def __call__(self, name=None):
         if name is None:
             name = self.name
+        elif ':' in name:
+            name = name.split(':')[0]
         return tf_var_from_shape(name, None, self.dtype, len(self.broadcastable))
 
 
@@ -89,7 +93,7 @@ def sum(x, axis=None):
             axis = x.ndim + axis
         result = tf.reduce_sum(x, axis)
         result_shape = get_raw_dimensions(x)
-        result_shape = list(result_shape[:axis]) + list(result_shape[axis+1:])
+        result_shape = list(result_shape[:axis]) + list(result_shape[axis + 1:])
     if get_raw_dimensions(result).ndims is None:
         result.set_shape(result_shape)
     return result
@@ -260,8 +264,8 @@ def flatten(x, outdim=1):
         return tf.reshape(x, [x.shape[0], -1])
 
 
-def max():
-    raise NotImplementedError
+def max(x):
+    return tf.reduce_max(x)
 
 
 def eq(x, y):
@@ -293,12 +297,26 @@ def _tf_variable_get_value(self, borrow=None):
     return tf_get_session().run(self)
 
 
+@tf_method([tf.Variable], "set_value")
+def _tf_variable_set_value(self, val, borrow=None):
+    tf_get_session().run(tf.assign(self, val))
+
+
+@tf_method([tf.Variable, tf.Tensor], "astype")
+def _tf_astype(self, dtype):
+    if isinstance(dtype, str):
+        return tf.cast(self, dtype)
+    return tf.cast(self, dtype.base_dtype)
+
+
 @tf_property_getter([tf.Variable], "broadcastable")
 def _tf_variable_broadcastable(self):
     return [True] * len(self.shape)
 
 
 _old_sub = getattr(ops.Tensor, "__sub__")
+
+
 @tf_method([tf.Variable, tf.Tensor], "__sub__")
 def _tf_sub(self, other):
     self_dim = list(get_raw_dimensions(self))
@@ -320,6 +338,8 @@ def _tf_sub(self, other):
 
 
 _old_mul = getattr(ops.Tensor, "__mul__")
+
+
 @tf_method([tf.Variable, tf.Tensor], "__mul__")
 def _tf_mul(self, other):
     self_dim = get_raw_dimensions(self)
@@ -328,6 +348,8 @@ def _tf_mul(self, other):
         self = self._AsTensor()
     if isinstance(other, tf.Variable):
         other = other._AsTensor()
+    if not self.dtype.is_floating and (isinstance(other, float) or other.dtype.is_floating):
+        self = tf.cast(self, tf.float32)
     if self_dim.ndims is not None and other_dim.ndims is not None:
         result = _old_mul(self, other)
         result_dim = get_raw_dimensions(result)
@@ -343,6 +365,8 @@ def _tf_mul(self, other):
 
 
 _old_rmul = getattr(ops.Tensor, "__rmul__")
+
+
 @tf_method([tf.Variable, tf.Tensor], "__rmul__")
 def _tf_rmul(self, other):
     self_dim = list(get_raw_dimensions(self))
@@ -352,7 +376,7 @@ def _tf_rmul(self, other):
         self = self._AsTensor()
     if isinstance(other, tf.Variable):
         other = other._AsTensor()
-    if not self.dtype.is_floating and isinstance(other, float):
+    if not self.dtype.is_floating and (isinstance(other, float) or other.dtype.is_floating):
         self = tf.cast(self, tf.float32)
     result = _old_rmul(self, other)
     result_dim = get_raw_dimensions(result)
