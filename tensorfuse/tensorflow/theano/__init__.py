@@ -7,6 +7,7 @@ from tensorfuse.tensorflow import compat
 from . import config
 from . import compile
 from . import gradient
+from . import tensor
 from .gradient import grad
 from .gof import Variable
 from tensorflow.python.ops import variable_scope
